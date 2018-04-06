@@ -39,9 +39,9 @@ startmasternode "alias" "0" "MN1"
 
 ## Usage:
 ```
-rupaya-cli mnsync status
-rupaya-cli getinfo
-rupaya-cli masternode status
+colx-cli mnsync status
+colx-cli getinfo
+colx-cli masternode status
 ```
 
 Also, if you want to check/start/stop **COLX** , run one of the following commands as **root**:
