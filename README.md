@@ -14,8 +14,8 @@ bash COLX_MN_Installer.sh
 After the MN is up and running, you need to configure the desktop wallet accordingly. Here are the steps for Windows Wallet
 1. Open the COLX Coin Desktop Wallet.
 2. Go to RECEIVE and create a New Address: **MN1**
-3. Send **10000** **COLX** to **MN1**.
-4. Wait for 15 confirmations.
+3. Send **10000000** **COLX** to **MN1**.
+4. Wait for 6 confirmations.
 5. Go to **Tools -> "Debug console - Console"**
 6. Type the following command: **masternode outputs**
 7. Go to  ** Tools -> "Open Masternode Configuration File"
