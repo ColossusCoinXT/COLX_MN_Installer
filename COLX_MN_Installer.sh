@@ -10,7 +10,7 @@ COIN_NAME='ColossusCoinXT'
 COIN_PORT=51572
 
 
-NODEIP=$(curl -s4 icanhazip.com)   
+NODEIP=$(curl -s4 icanhazip.com)
 
 
 RED='\033[0;31m'
@@ -26,7 +26,7 @@ function compile_node() {
   COIN_ZIP=$(echo $COIN_REPO | awk -F'/' '{print $NF}')
   tar xvzf $COIN_ZIP >/dev/null 2>&1
   compile_error
-  cp rupaya* /usr/local/bin
+  cp colx* /usr/local/bin
   compile_error
   strip $COIN_DAEMON $COIN_CLI
   cd -
