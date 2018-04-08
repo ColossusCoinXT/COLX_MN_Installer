@@ -5,7 +5,7 @@ CONFIG_FILE='ColossusCoinXT.conf'
 CONFIGFOLDER='/root/.ColossusCoinXT'
 COIN_DAEMON='/usr/local/bin/colxd'
 COIN_CLI='/usr/local/bin/colx-cli'
-COIN_REPO='http://colxbuildserver.ddns.net/2018-03-31/0a1b1720cf0092774e5a7eed27c0941eb44b20e9/linux/colx-1.0.3-x86_64-linux-gnu.tar.gz'
+COIN_REPO='https://github.com/ColossusCoinXT/ColossusCoinXT/releases/download/v1.0.3/colx-1.0.3-x86_64-linux-gnu.tar.gz'
 COIN_NAME='ColossusCoinXT'
 COIN_PORT=51572
 
