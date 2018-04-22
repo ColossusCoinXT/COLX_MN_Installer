@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TMP_FOLDER=$(mktemp -d)
-CONFIG_FILE="ColossusCoinXT.conf"
+CONFIG_FILE="colossusxt.conf"
 DEFAULT_USER="colossusxt-mn1"
 DEFAULT_PORT=51572
 DEFAULT_SSH_PORT=22
