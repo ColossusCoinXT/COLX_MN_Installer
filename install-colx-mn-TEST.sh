@@ -380,7 +380,7 @@ function create_key()
   read -e -p "$(echo -e $YELLOW Enter your master nodes private key. Leave it blank to generate a new private key.$NC)" PRIV_KEY
 
   if [[ -z "$PRIV_KEY" ]]; then
-    sudo -u $USER_NAME $DAEMON_BINARY_FILE -datadir=$DATA_DIR -daemon >/dev/null 2>&1
+    sudo -u $USER_NAME $DAEMON_BINARY_FILE -datadir=$DATA_DIR --daemon >/dev/null 2>&1
     sleep 5
 
     if [ -z "$(pidof $DAEMON_BINARY)" ]; then
