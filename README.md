@@ -5,7 +5,7 @@ Shell script to install a [COLX Masternode](http://colossuscoinxt.org/) on a Lin
 ## Installation:
 ```
 1) wget -q https://raw.githubusercontent.com/ColossusCoinXT/COLX_MN_Installer/master/COLX_MN_Installer.sh
-2) bash COLX_MN_Installer.sh
+2) chmod +x && ./COLX_MN_Installer.sh
 ```
 ***
 
