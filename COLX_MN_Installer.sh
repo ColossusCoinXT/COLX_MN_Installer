@@ -1,14 +1,15 @@
 #!/bin/bash
 
+VERSION=1.2.2
 TMP_FOLDER=$(mktemp -d)
-CONFIG_FILE='ColossusCoinXT.conf'
-CONFIGFOLDER='/root/.ColossusCoinXT'
+CONFIG_FILE='ColossusXT.conf'
+CONFIGFOLDER='~/.ColossusXT'
 COIN_DAEMON='/usr/local/bin/colxd'
 COIN_CLI='/usr/local/bin/colx-cli'
-COIN_REPO='http://bot.colxt.net/mn/colx-1.0.3-x86_64-linux-gnu.tar.gz' 
-COIN_NAME='ColossusCoinXT'
+COIN_REPO="https://github.com/ColossusCoinXT/ColossusCoinXT/releases/download/v${VERSION}/colx-${VERSION}-x86_64-linux-gnu.tar.gz" 
+COIN_NAME='ColossusXT'
 COIN_PORT=51572
-
+COIN_RPC_PORT=$((COIN_PORT+1))
 
 NODEIP=$(curl -s4 icanhazip.com)
 
@@ -18,16 +19,32 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 
+function welcome(){
+wget -q -O - https://bootstrap.colossusxt.io/logo.txt > /tmp/colx_logo.txt
+cat /tmp/colx_logo.txt
+echo "ColossusXT Masternode Script for  ${COIN_NAME} v${VERSION} by the ${COIN_NAME} Core Team.
+Repo link: https://github.com/ColossusCoinXT/COLX_MN_Installer/"
+sleep 5s
+}
+
+
+function install_dependencies(){
+  apt-get update && apt-get install -y lsb-release wget curl net-tools systemd && apt-get clean all
+}
+
 function compile_node() {
-  echo -e "Prepare to download $COIN_NAME"
+  echo -e "Prepare to download $COIN_NAME $VERSION"
   cd $TMP_FOLDER
+  echo -e "Creating temp folder to: $TMP_FOLDER"
   wget -q $COIN_REPO
-  compile_error
+  echo -e "Downloading from repo $COIN_REPO...."
+  compile_error "Downloading from repo failed..."
   COIN_ZIP=$(echo $COIN_REPO | awk -F'/' '{print $NF}')
   tar xvzf $COIN_ZIP >/dev/null 2>&1
-  compile_error
-  cp colx* /usr/local/bin
-  compile_error
+  echo -e "Unpacking $COIN_ZIP"
+  compile_error "Unpacking the archive failed..."
+  cp -a colx-$VERSION/bin/* /usr/local/bin
+  compile_error "Copying files to destination folder failed..."
   strip $COIN_DAEMON $COIN_CLI
   cd -
   rm -rf $TMP_FOLDER >/dev/null 2>&1
@@ -119,7 +136,7 @@ fi
 
 
 function create_config() {
-  mkdir $CONFIGFOLDER >/dev/null 2>&1
+  mkdir -p $CONFIGFOLDER && touch $CONFIGFOLDER/$CONFIG_FILE
   RPCUSER=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w10 | head -n1)
   RPCPASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w22 | head -n1)
   cat << EOF > $CONFIGFOLDER/$CONFIG_FILE
@@ -129,8 +146,12 @@ rpcallowip=127.0.0.1
 listen=1
 server=1
 daemon=1
+addnode=seed.colossusxt.io
+addnode=seed.colossuscoinxt.org
+addnode=seed.colossusxt.org
 addnode=seed.colxt.net
 port=$COIN_PORT
+rpcport=$COIN_RPC_PORT
 EOF
 }
 
@@ -157,7 +178,7 @@ clear
 }
 
 function update_config() {
-  sed -i 's/daemon=1/daemon=0/' $CONFIGFOLDER/$CONFIG_FILE
+  #sed -i 's/daemon=1/daemon=0/' $CONFIGFOLDER/$CONFIG_FILE
   cat << EOF >> $CONFIGFOLDER/$CONFIG_FILE
 logintimestamps=1
 maxconnections=256
@@ -208,17 +229,18 @@ function compile_error() {
 if [ "$?" -gt "0" ];
  then
   echo -e "${RED}Failed to compile $COIN_NAME. Please investigate.${NC}"
+  echo -e "${RED}${1}${NC}"
   exit 1
 fi
 }
 
 function detect_ubuntu() {
- if [[ $(lsb_release -d) == *16.04* ]]; then
+ if [[ $(lsb_release -d) == *18.04* ]]; then
+   UBUNTU_VERSION=18
+ elif [[ $(lsb_release -d) == *16.04* ]]; then
    UBUNTU_VERSION=16
- elif [[ $(lsb_release -d) == *14.04* ]]; then
-   UBUNTU_VERSION=14
 else
-   echo -e "${RED}You are not running Ubuntu 14.04 or 16.04 Installation is cancelled.${NC}"
+   echo -e "${RED}You are not running Ubuntu 16.04 or 18.04 Installation is cancelled.${NC}"
    exit 1
 fi
 }
@@ -272,6 +294,7 @@ function important_information() {
  echo
  echo -e "================================================================================================================================"
  echo -e "$COIN_NAME Masternode is up and running listening on port ${RED}$COIN_PORT${NC}."
+ echo -e "Wallet files can be found under: ${RED}/usr/local/bin/${NC}"
  echo -e "Configuration file is: ${RED}$CONFIGFOLDER/$CONFIG_FILE${NC}"
  if (( $UBUNTU_VERSION == 16 )); then
    echo -e "Start: ${RED}systemctl start $COIN_NAME.service${NC}"
@@ -297,7 +320,7 @@ function setup_node() {
   update_config
   enable_firewall
   important_information
-  if (( $UBUNTU_VERSION == 16 )); then
+  if (( $UBUNTU_VERSION == 18 )); then
     configure_systemd
   else
     configure_startup
@@ -307,8 +330,11 @@ function setup_node() {
 
 ##### Main #####
 clear
-
+install_dependencies
+clear
+welcome
 checks
 prepare_system
 compile_node
 setup_node
+
