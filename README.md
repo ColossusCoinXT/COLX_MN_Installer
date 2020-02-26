@@ -46,6 +46,13 @@ colx-cli masternode status
 
 Also, if you want to check/start/stop **COLX** , run one of the following commands as **root**:
 
+**Ubuntu 18.04**:  
+```
+sudo service ColossusXT start #To start COLX service
+sudo service ColossusXT stop #To stop COLX service
+sudo service ColossusXT restart #To restart COLX service
+```
+
 **Ubuntu 16.04**:
 ```
 systemctl status COLX #To check the service is running.
