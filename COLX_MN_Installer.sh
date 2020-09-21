@@ -1,58 +1,55 @@
 #!/bin/bash
 
-VERSION=1.2.2
+VERSION=1.2.4
 TMP_FOLDER=$(mktemp -d)
 CONFIG_FILE='ColossusXT.conf'
 CONFIGFOLDER='~/.ColossusXT'
 COIN_DAEMON='/usr/local/bin/colxd'
 COIN_CLI='/usr/local/bin/colx-cli'
-COIN_REPO="https://github.com/ColossusCoinXT/ColossusCoinXT/releases/download/v${VERSION}/colx-${VERSION}-x86_64-linux-gnu.tar.gz" 
+COIN_REPO="https://github.com/ColossusCoinXT/ColossusCoinXT/releases/download/v${VERSION}/colx-${VERSION}-x86_64-linux-gnu.tar.gz"
 COIN_NAME='ColossusXT'
 COIN_PORT=51572
-COIN_RPC_PORT=$((COIN_PORT+1))
+COIN_RPC_PORT=$((COIN_PORT + 1))
 
 NODEIP=$(curl -s4 icanhazip.com)
-
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-
-function welcome(){
-wget -q -O - https://bootstrap.colossusxt.io/logo.txt > /tmp/colx_logo.txt
-cat /tmp/colx_logo.txt
-echo "ColossusXT Masternode Script for  ${COIN_NAME} v${VERSION} by the ${COIN_NAME} Core Team.
+function welcome() {
+    wget -q -O - https://bootstrap.colossusxt.io/logo.txt > /tmp/colx_logo.txt
+    cat /tmp/colx_logo.txt
+    echo "ColossusXT Masternode Script for  ${COIN_NAME} v${VERSION} by the ${COIN_NAME} Core Team.
 Repo link: https://github.com/ColossusCoinXT/COLX_MN_Installer/"
-sleep 5s
+    sleep 5s
 }
 
-
-function install_dependencies(){
-  apt-get update && apt-get install -y lsb-release wget curl net-tools systemd && apt-get clean all
+function install_dependencies() {
+    apt-get update && apt-get install -y lsb-release wget curl net-tools systemd && apt-get clean all
 }
 
 function compile_node() {
-  echo -e "Prepare to download $COIN_NAME $VERSION"
-  cd $TMP_FOLDER
-  echo -e "Creating temp folder to: $TMP_FOLDER"
-  wget -q $COIN_REPO
-  echo -e "Downloading from repo $COIN_REPO...."
-  compile_error "Downloading from repo failed..."
-  COIN_ZIP=$(echo $COIN_REPO | awk -F'/' '{print $NF}')
-  tar xvzf $COIN_ZIP >/dev/null 2>&1
-  echo -e "Unpacking $COIN_ZIP"
-  compile_error "Unpacking the archive failed..."
-  cp -a colx-$VERSION/bin/* /usr/local/bin
-  compile_error "Copying files to destination folder failed..."
-  strip $COIN_DAEMON $COIN_CLI
-  cd -
-  rm -rf $TMP_FOLDER >/dev/null 2>&1
-  clear
+    echo -e "Prepare to download $COIN_NAME $VERSION"
+    cd $TMP_FOLDER
+    echo -e "Creating temp folder to: $TMP_FOLDER"
+    wget -q $COIN_REPO
+    echo -e "Downloading from repo $COIN_REPO...."
+    compile_error "Downloading from repo failed..."
+    COIN_ZIP=$(echo $COIN_REPO | awk -F'/' '{print $NF}')
+    tar xvzf $COIN_ZIP > /dev/null 2>&1
+    echo -e "Unpacking $COIN_ZIP"
+    compile_error "Unpacking the archive failed..."
+    cp -a colx-$VERSION/bin/* /usr/local/bin
+    compile_error "Copying files to destination folder failed..."
+    strip $COIN_DAEMON $COIN_CLI
+    cd -
+    rm -rf $TMP_FOLDER > /dev/null 2>&1
+    clear
 }
 
 function configure_systemd() {
-  cat << EOF > /etc/systemd/system/$COIN_NAME.service
+    cat << EOF > /etc/systemd/system/$COIN_NAME.service
 [Unit]
 Description=$COIN_NAME service
 After=network.target
@@ -78,22 +75,22 @@ StartLimitBurst=5
 WantedBy=multi-user.target
 EOF
 
-  systemctl daemon-reload
-  sleep 3
-  systemctl start $COIN_NAME.service
-  systemctl enable $COIN_NAME.service >/dev/null 2>&1
+    systemctl daemon-reload
+    sleep 3
+    systemctl start $COIN_NAME.service
+    systemctl enable $COIN_NAME.service > /dev/null 2>&1
 
-  if [[ -z "$(ps axo cmd:100 | egrep $COIN_DAEMON)" ]]; then
-    echo -e "${RED}$COIN_NAME is not running${NC}, please investigate. You should start by running the following commands as root:"
-    echo -e "${GREEN}systemctl start $COIN_NAME.service"
-    echo -e "systemctl status $COIN_NAME.service"
-    echo -e "less /var/log/syslog${NC}"
-    exit 1
-  fi
+    if [[ -z "$(ps axo cmd:100 | egrep $COIN_DAEMON)" ]]; then
+        echo -e "${RED}$COIN_NAME is not running${NC}, please investigate. You should start by running the following commands as root:"
+        echo -e "${GREEN}systemctl start $COIN_NAME.service"
+        echo -e "systemctl status $COIN_NAME.service"
+        echo -e "less /var/log/syslog${NC}"
+        exit 1
+    fi
 }
 
 function configure_startup() {
-  cat << EOF > /etc/init.d/$COIN_NAME
+    cat << EOF > /etc/init.d/$COIN_NAME
 #! /bin/bash
 ### BEGIN INIT INFO
 # Provides: $COIN_NAME
@@ -125,21 +122,20 @@ case "\$1" in
    ;;
 esac
 EOF
-chmod +x /etc/init.d/$COIN_NAME >/dev/null 2>&1
-update-rc.d $COIN_NAME defaults >/dev/null 2>&1
-/etc/init.d/$COIN_NAME start >/dev/null 2>&1
-if [ "$?" -gt "0" ]; then
- sleep 5
- /etc/init.d/$COIN_NAME start >/dev/null 2>&1
-fi
+    chmod +x /etc/init.d/$COIN_NAME > /dev/null 2>&1
+    update-rc.d $COIN_NAME defaults > /dev/null 2>&1
+    /etc/init.d/$COIN_NAME start > /dev/null 2>&1
+    if [ "$?" -gt "0" ]; then
+        sleep 5
+        /etc/init.d/$COIN_NAME start > /dev/null 2>&1
+    fi
 }
 
-
 function create_config() {
-  mkdir -p $CONFIGFOLDER && touch $CONFIGFOLDER/$CONFIG_FILE
-  RPCUSER=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w10 | head -n1)
-  RPCPASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w22 | head -n1)
-  cat << EOF > $CONFIGFOLDER/$CONFIG_FILE
+    mkdir -p $CONFIGFOLDER && touch $CONFIGFOLDER/$CONFIG_FILE
+    RPCUSER=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w10 | head -n1)
+    RPCPASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w22 | head -n1)
+    cat << EOF > $CONFIGFOLDER/$CONFIG_FILE
 rpcuser=$RPCUSER
 rpcpassword=$RPCPASSWORD
 rpcallowip=127.0.0.1
@@ -156,30 +152,29 @@ EOF
 }
 
 function create_key() {
-  echo -e "Enter your ${RED}$COIN_NAME Masternode Private Key${NC}. Leave it blank to generate a new ${RED}$COIN_NAME Masternode Private Key${NC} for you:"
-  read -e COINKEY
-  if [[ -z "$COINKEY" ]]; then
-  $COIN_DAEMON -daemon
-  sleep 30
-  if [ -z "$(ps axo cmd:100 | grep $COIN_DAEMON)" ]; then
-   echo -e "${RED}$COIN_NAME server couldn not start. Check /var/log/syslog for errors.{$NC}"
-   exit 1
-  fi
-  COINKEY=$($COIN_CLI masternode genkey)
-  if [ "$?" -gt "0" ];
-    then
-    echo -e "${RED}Wallet not fully loaded. Let us wait and try again to generate the Private Key${NC}"
-    sleep 30
-    COINKEY=$($COIN_CLI masternode genkey)
-  fi
-  $COIN_CLI stop
-fi
-clear
+    echo -e "Enter your ${RED}$COIN_NAME Masternode Private Key${NC}. Leave it blank to generate a new ${RED}$COIN_NAME Masternode Private Key${NC} for you:"
+    read -e COINKEY
+    if [[ -z $COINKEY ]]; then
+        $COIN_DAEMON -daemon
+        sleep 30
+        if [ -z "$(ps axo cmd:100 | grep $COIN_DAEMON)" ]; then
+            echo -e "${RED}$COIN_NAME server couldn not start. Check /var/log/syslog for errors.{$NC}"
+            exit 1
+        fi
+        COINKEY=$($COIN_CLI masternode genkey)
+        if [ "$?" -gt "0" ]; then
+            echo -e "${RED}Wallet not fully loaded. Let us wait and try again to generate the Private Key${NC}"
+            sleep 30
+            COINKEY=$($COIN_CLI masternode genkey)
+        fi
+        $COIN_CLI stop
+    fi
+    clear
 }
 
 function update_config() {
-  #sed -i 's/daemon=1/daemon=0/' $CONFIGFOLDER/$CONFIG_FILE
-  cat << EOF >> $CONFIGFOLDER/$CONFIG_FILE
+    #sed -i 's/daemon=1/daemon=0/' $CONFIGFOLDER/$CONFIG_FILE
+    cat << EOF >> $CONFIGFOLDER/$CONFIG_FILE
 logintimestamps=1
 maxconnections=256
 #bind=$NODEIP
@@ -189,144 +184,134 @@ masternodeprivkey=$COINKEY
 EOF
 }
 
-
 function enable_firewall() {
-  echo -e "Installing and setting up firewall to allow ingress on port ${GREEN}$COIN_PORT${NC}"
-  ufw allow $COIN_PORT/tcp >/dev/null 2>&1
-  ufw allow ssh >/dev/null 2>&1
-  ufw limit ssh/tcp >/dev/null 2>&1
-  ufw default allow outgoing >/dev/null 2>&1
-  echo "y" | ufw enable >/dev/null 2>&1
+    echo -e "Installing and setting up firewall to allow ingress on port ${GREEN}$COIN_PORT${NC}"
+    ufw allow $COIN_PORT/tcp > /dev/null 2>&1
+    ufw allow ssh > /dev/null 2>&1
+    ufw limit ssh/tcp > /dev/null 2>&1
+    ufw default allow outgoing > /dev/null 2>&1
+    echo "y" | ufw enable > /dev/null 2>&1
 }
-
-
 
 function get_ip() {
-  declare -a NODE_IPS
-  for ips in $(netstat -i | awk '!/Kernel|Iface|lo/ {print $1," "}')
-  do
-    NODE_IPS+=($(curl --interface $ips --connect-timeout 2 -s4 icanhazip.com))
-  done
+    declare -a NODE_IPS
+    for ips in $(netstat -i | awk '!/Kernel|Iface|lo/ {print $1," "}'); do
+        NODE_IPS+=($(curl --interface $ips --connect-timeout 2 -s4 icanhazip.com))
+    done
 
-  if [ ${#NODE_IPS[@]} -gt 1 ]
-    then
-      echo -e "${GREEN}More than one IP. Please type 0 to use the first IP, 1 for the second and so on...${NC}"
-      INDEX=0
-      for ip in "${NODE_IPS[@]}"
-      do
-        echo ${INDEX} $ip
-        let INDEX=${INDEX}+1
-      done
-      read -e choose_ip
-      NODEIP=${NODE_IPS[$choose_ip]}
-  else
-    NODEIP=${NODE_IPS[0]}
-  fi
+    if [ ${#NODE_IPS[@]} -gt 1 ]; then
+        echo -e "${GREEN}More than one IP. Please type 0 to use the first IP, 1 for the second and so on...${NC}"
+        INDEX=0
+        for ip in "${NODE_IPS[@]}"; do
+            echo ${INDEX} $ip
+            let INDEX=INDEX+1
+        done
+        read -e choose_ip
+        NODEIP=${NODE_IPS[$choose_ip]}
+    else
+        NODEIP=${NODE_IPS[0]}
+    fi
 }
 
-
 function compile_error() {
-if [ "$?" -gt "0" ];
- then
-  echo -e "${RED}Failed to compile $COIN_NAME. Please investigate.${NC}"
-  echo -e "${RED}${1}${NC}"
-  exit 1
-fi
+    if [ "$?" -gt "0" ]; then
+        echo -e "${RED}Failed to compile $COIN_NAME. Please investigate.${NC}"
+        echo -e "${RED}${1}${NC}"
+        exit 1
+    fi
 }
 
 function detect_ubuntu() {
- if [[ $(lsb_release -d) == *18.04* ]]; then
-   UBUNTU_VERSION=18
- elif [[ $(lsb_release -d) == *16.04* ]]; then
-   UBUNTU_VERSION=16
-else
-   echo -e "${RED}You are not running Ubuntu 16.04 or 18.04 Installation is cancelled.${NC}"
-   exit 1
-fi
+    if [[ $(lsb_release -d) == *20.04* ]]; then
+        UBUNTU_VERSION=20
+    elif [[ $(lsb_release -d) == *18.04* ]]; then
+        UBUNTU_VERSION=18
+    elif [[ $(lsb_release -d) == *16.04* ]]; then
+        UBUNTU_VERSION=16
+    else
+        echo -e "${RED}You are not running Ubuntu 16.04, 18.04 or 20.04 Installation is cancelled.${NC}"
+        exit 1
+    fi
 }
 
-
 function checks() {
- detect_ubuntu
-if [[ $EUID -ne 0 ]]; then
-   echo -e "${RED}$0 must be run as root.${NC}"
-   exit 1
-fi
+    detect_ubuntu
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}$0 must be run as root.${NC}"
+        exit 1
+    fi
 
-if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ] ; then
-  echo -e "${RED}$COIN_NAME is already installed.${NC}"
-  exit 1
-fi
+    if [ -n "$(pidof $COIN_DAEMON)" ] || [ -e "$COIN_DAEMOM" ]; then
+        echo -e "${RED}$COIN_NAME is already installed.${NC}"
+        exit 1
+    fi
 }
 
 function prepare_system() {
-echo -e "Prepare the system to install ${GREEN}$COIN_NAME${NC} master node."
-apt-get update >/dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq upgrade >/dev/null 2>&1
-apt install -y software-properties-common >/dev/null 2>&1
-echo -e "${GREEN}Adding bitcoin PPA repository"
-apt-add-repository -y ppa:bitcoin/bitcoin >/dev/null 2>&1
-echo -e "Installing required packages, it may take some time to finish.${NC}"
-apt-get update >/dev/null 2>&1
-apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" make software-properties-common \
-build-essential libtool autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev \
-libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git wget curl libdb4.8-dev bsdmainutils libdb4.8++-dev \
-libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev>/dev/null 2>&1
-if [ "$?" -gt "0" ];
-  then
-    echo -e "${RED}Not all required packages were installed properly. Try to install them manually by running the following commands:${NC}\n"
-    echo "apt-get update"
-    echo "apt -y install software-properties-common"
-    echo "apt-add-repository -y ppa:bitcoin/bitcoin"
-    echo "apt-get update"
-    echo "apt install -y make build-essential libtool software-properties-common autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev \
+    echo -e "Prepare the system to install ${GREEN}$COIN_NAME${NC} master node."
+    apt-get update > /dev/null 2>&1
+    DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null 2>&1
+    DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq upgrade > /dev/null 2>&1
+    apt install -y software-properties-common > /dev/null 2>&1
+    echo -e "${GREEN}Adding bitcoin PPA repository"
+    apt-add-repository -y ppa:bitcoin/bitcoin > /dev/null 2>&1
+    echo -e "Installing required packages, it may take some time to finish.${NC}"
+    apt-get update > /dev/null 2>&1
+    apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" make software-properties-common \
+        build-essential libtool autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev \
+        libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git wget curl libdb4.8-dev bsdmainutils libdb4.8++-dev \
+        libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev > /dev/null 2>&1
+    if [ "$?" -gt "0" ]; then
+        echo -e "${RED}Not all required packages were installed properly. Try to install them manually by running the following commands:${NC}\n"
+        echo "apt-get update"
+        echo "apt -y install software-properties-common"
+        echo "apt-add-repository -y ppa:bitcoin/bitcoin"
+        echo "apt-get update"
+        echo "apt install -y make build-essential libtool software-properties-common autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev \
 libboost-program-options-dev libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git curl libdb4.8-dev \
 bsdmainutils libdb4.8++-dev libminiupnpc-dev libgmp3-dev ufw fail2ban pkg-config libevent-dev"
- exit 1
-fi
+        exit 1
+    fi
 
-clear
+    clear
 }
 
-
 function important_information() {
- echo
- echo -e "================================================================================================================================"
- echo -e "$COIN_NAME Masternode is up and running listening on port ${RED}$COIN_PORT${NC}."
- echo -e "Wallet files can be found under: ${RED}/usr/local/bin/${NC}"
- echo -e "Configuration file is: ${RED}$CONFIGFOLDER/$CONFIG_FILE${NC}"
- if (( $UBUNTU_VERSION == 16 )); then
-   echo -e "Start: ${RED}systemctl start $COIN_NAME.service${NC}"
-   echo -e "Stop: ${RED}systemctl stop $COIN_NAME.service${NC}"
- else
-   echo -e "Start: ${RED}/etc/init.d/$COIN_NAME start${NC}"
-   echo -e "Stop: ${RED}/etc/init.d/$COIN_NAME stop${NC}"
- fi
- echo -e "VPS_IP:PORT ${RED}$NODEIP:$COIN_PORT${NC}"
- echo -e "MASTERNODE PRIVATEKEY is: ${RED}$COINKEY${NC}"
- if [[ -n $SENTINEL_REPO  ]]; then
-  echo -e "${RED}Sentinel${NC} is installed in ${RED}$CONFIGFOLDER/sentinel${NC}"
-  echo -e "Sentinel logs is: ${RED}$CONFIGFOLDER/sentinel.log${NC}"
- fi
- echo -e "Check if $COIN_NAME is running by using the following command: ${RED}ps -ef | grep $COIN_DAEMON | grep -v grep${NC}"
- echo -e "================================================================================================================================"
+    echo
+    echo -e "================================================================================================================================"
+    echo -e "$COIN_NAME Masternode is up and running listening on port ${RED}$COIN_PORT${NC}."
+    echo -e "Wallet files can be found under: ${RED}/usr/local/bin/${NC}"
+    echo -e "Configuration file is: ${RED}$CONFIGFOLDER/$CONFIG_FILE${NC}"
+    if ((UBUNTU_VERSION == 16)); then
+        echo -e "Start: ${RED}systemctl start $COIN_NAME.service${NC}"
+        echo -e "Stop: ${RED}systemctl stop $COIN_NAME.service${NC}"
+    else
+        echo -e "Start: ${RED}/etc/init.d/$COIN_NAME start${NC}"
+        echo -e "Stop: ${RED}/etc/init.d/$COIN_NAME stop${NC}"
+    fi
+    echo -e "VPS_IP:PORT ${RED}$NODEIP:$COIN_PORT${NC}"
+    echo -e "MASTERNODE PRIVATEKEY is: ${RED}$COINKEY${NC}"
+    if [[ -n $SENTINEL_REPO ]]; then
+        echo -e "${RED}Sentinel${NC} is installed in ${RED}$CONFIGFOLDER/sentinel${NC}"
+        echo -e "Sentinel logs is: ${RED}$CONFIGFOLDER/sentinel.log${NC}"
+    fi
+    echo -e "Check if $COIN_NAME is running by using the following command: ${RED}ps -ef | grep $COIN_DAEMON | grep -v grep${NC}"
+    echo -e "================================================================================================================================"
 }
 
 function setup_node() {
-  get_ip
-  create_config
-  create_key
-  update_config
-  enable_firewall
-  important_information
-  if (( $UBUNTU_VERSION == 18 )); then
-    configure_systemd
-  else
-    configure_startup
-  fi
+    get_ip
+    create_config
+    create_key
+    update_config
+    enable_firewall
+    important_information
+    if ((UBUNTU_VERSION == 18)); then
+        configure_systemd
+    else
+        configure_startup
+    fi
 }
-
 
 ##### Main #####
 clear
@@ -337,4 +322,3 @@ checks
 prepare_system
 compile_node
 setup_node
-
